@@ -59,6 +59,6 @@ class NeuronTest {
     @Test
     void activationFunction() {
         neuron.activationFunction();
-        assertEquals(Math.tanh(neuron.getWeightedSum())+1,neuron.getOutputValue());
+        assertEquals(Math.tanh(neuron.getWeightedSum()),neuron.getOutputValue());
     }
 }
