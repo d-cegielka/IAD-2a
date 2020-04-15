@@ -20,4 +20,8 @@ class LayerTest {
         assertEquals(3,layer2.getNumOfLayerNeurons());
     }
 
+    @Test
+    void layerToString() {
+        assertEquals(" ",layer1.toString());
+    }
 }

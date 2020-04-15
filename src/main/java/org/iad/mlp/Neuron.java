@@ -45,12 +45,12 @@ public class Neuron extends Weights {
     /**
      * Sumą ważona neuronu są wartości wejścia pomnożone przez wagi neuronu.
      *
-     * @param input wejście przekazywane warstwie sieci
+     * @param inputs wejście przekazywane warstwie sieci
      */
-    public void calcWeightedSum(final double[] input/*, boolean isInputLayer*/) {
+    public void calcWeightedSum(final double[] inputs/*, boolean isInputLayer*/) {
         double sum = 0.0;
         for (int i = 0; i < getNumOfWeight(); i++) {
-            sum += input[i] * getWeight(i);
+            sum += inputs[i] * getWeight(i);
         }
         setWeightedSum(sum);
     }
@@ -60,16 +60,19 @@ public class Neuron extends Weights {
      * funkcja sigmoidalna wyrażona jest wzorem (1 / 1 + e ^ -x)
      */
     public void activationFunction() {
-        outputValue = Math.tanh(weightedSum);
+        //funkcja sigmoidalna unipolarna [0;1]
         //outputValue = 1.0 / (1.0 + Math.exp(-weightedSum));
+        //funkcja sigmoidalna bipolarna [-1;1]
+        outputValue = Math.tanh(weightedSum);
     }
 
     @Override
     public String toString() {
-        return "Neuron{" +
-                "error=" + error +
-                ", weightedSum=" + weightedSum +
-                ", outputValue=" + outputValue +
-                '}';
+        final StringBuilder sb = new StringBuilder();
+        sb.append(super.toString());
+        sb.append("Suma ważona wejść: ").append(weightedSum).append("\n\t\t");
+        sb.append("Wyjście neuronu: ").append(outputValue).append("\n\t\t");
+        sb.append("Błąd neuronu: ").append(error).append("\n\t");
+        return sb.toString();
     }
 }

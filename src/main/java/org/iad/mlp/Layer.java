@@ -28,18 +28,34 @@ public class Layer {
         return layerNeurons.size();
     }
 
+    /**
+     * Ilość wag neuronu w warstwie
+     * Każdy neuron w warstwie ma taką samą ilość wag
+     * @return zwracana jest liczba wag pierwszego neuronu w warstwie
+     */
+    public int getNumOfNeuronWeights() {
+        return layerNeurons.get(0).getNumOfWeight();
+    };
 
-    public Neuron getNeuronFromLayer(int neuronIndex){
+
+    public Neuron getNeuron(int neuronIndex){
         return layerNeurons.get(neuronIndex);
     }
 
     @Override
     public String toString() {
-        return "Layer{" +
-                "layerNeurons=" + layerNeurons +
-                '}';
+        final StringBuilder sb = new StringBuilder();
+        for (int n = 0; n < getNumOfLayerNeurons(); n++) {
+            sb.append("\tNeuron[").append(n+1).append("] {\n\t\t");
+            sb.append(layerNeurons.get(n).toString()).append("}\n\n");
+        }
+        return sb.toString();
     }
 
+    /**
+     *  Metoda tworzy tablicę z wartości wyjść każdego neuronu w warstwie
+     * @return tablica wartości wyjściowych neuronów (licząc od zera do ostatniego neuronu w warstwie)
+     */
     public double[] getNeuronsOutputs(){
         double[] outputs = new double[getNumOfLayerNeurons()];
         for (int i = 0; i < getNumOfLayerNeurons(); i++) {

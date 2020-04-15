@@ -2,6 +2,7 @@ package org.iad.mlp;
 
 import java.util.Arrays;
 import java.util.Random;
+import java.util.Spliterator;
 
 public class Weights {
     private boolean isBias;
@@ -73,11 +74,11 @@ public class Weights {
 
     @Override
     public String toString() {
-        return "Weights{" +
-                "isBias=" + isBias +
-                ", weights=" + Arrays.toString(weights) +
-                ", prevWeights=" + Arrays.toString(prevWeights) +
-                ", prevPrevWeights=" + Arrays.toString(prevPrevWeights) +
-                '}';
+        final StringBuilder sb = new StringBuilder();
+        sb.append("Wagi: ").append(Arrays.toString(Arrays.copyOf(weights, getNumOfWeight()))).append("\n\t\t");
+        if (isBias) {
+            sb.append("Waga biasu: ").append(weights[weights.length - 1]).append("\n\t\t");
+        }
+        return sb.toString();
     }
 }
