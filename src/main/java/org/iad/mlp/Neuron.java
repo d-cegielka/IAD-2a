@@ -29,6 +29,11 @@ public class Neuron extends Weights {
         return error;
     }
 
+    /**
+     * Jeśli neuron ma BIAS do sumy ważonej dodawana jest jego wartość.
+     *
+     * @param weightedSum suma ważona
+     */
     public void setWeightedSum(double weightedSum) {
         if(isBias()){
             this.weightedSum = weightedSum + getWeight(getNumOfWeight());
@@ -38,9 +43,9 @@ public class Neuron extends Weights {
     }
 
     /**
+     * Sumą ważona neuronu są wartości wejścia pomnożone przez wagi neuronu.
      *
      * @param input wejście przekazywane warstwie sieci
-     * Sumą ważona neuronu są wartości wejścia pomnożone przez wagi neuronu.
      */
     public void calcWeightedSum(final double[] input/*, boolean isInputLayer*/) {
         double sum = 0.0;
@@ -54,7 +59,6 @@ public class Neuron extends Weights {
      * funkcja aktywacji ustawia wartość na wyjściu każdego neuronu z podanej warstwy,
      * funkcja sigmoidalna wyrażona jest wzorem (1 / 1 + e ^ -x)
      */
-
     public void activationFunction() {
         outputValue = Math.tanh(weightedSum);
         //outputValue = 1.0 / (1.0 + Math.exp(-weightedSum));

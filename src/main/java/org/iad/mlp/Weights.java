@@ -9,6 +9,12 @@ public class Weights {
     private double[] prevWeights;
     private double[] prevPrevWeights;
 
+    /**
+     * Konstruktor parametrowy
+     *
+     * @param numOfWeight ilość wag neuronu
+     * @param isBias czy neuron jest ma BIAS
+     */
     public Weights(final int numOfWeight, boolean isBias /*, final boolean isInputLayer*/) {
         this.isBias = isBias;
         if (isBias) {
@@ -23,6 +29,9 @@ public class Weights {
         RandomWeights();
     }
 
+    /**
+     * Losowanie wag neuronu z wartościami z zakresu -1:1
+     */
     private void RandomWeights() {
         Random random = new Random();
         weights = random.doubles(weights.length,-1.0,1.0).toArray();
