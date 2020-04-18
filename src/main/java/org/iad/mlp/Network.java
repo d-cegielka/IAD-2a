@@ -1,9 +1,10 @@
 package org.iad.mlp;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Network {
+public class Network implements Serializable {
     private List<Layer> networkLayers;
     private double networkError;
 
@@ -120,8 +121,9 @@ public class Network {
         for (int i = 0; i < networkLayers.get(indexLastLayer).getNumOfLayerNeurons(); i++) {
             diff = outputs[i] - networkLayers.get(indexLastLayer).getNeuron(i).getOutputValue();
             networkLayers.get(indexLastLayer).getNeuron(i).setError(derivative(networkLayers.get(indexLastLayer).getNeuron(i).getOutputValue()) * diff);
-            networkError += (diff * diff) / 2;
+            networkError += diff * diff;
         }
+        networkError /=2;
 
         //Obliczenie błedów warstw ukrytych
         for (int l = indexLastLayer; l > 0; l--) {
@@ -172,8 +174,8 @@ public class Network {
      * @return pochodna funkcji sigmoidalnej f'(x)
      */
     private double derivative(double input){
-        //return input * (1 - input);
-        return 1 - (input * input);
+        return input * (1 - input);
+        //return 1 - (input * input);
     }
 
     /**
@@ -182,6 +184,14 @@ public class Network {
      */
     public int getNumOfNetworkLayers() {
         return networkLayers.size();
+    }
+
+    /**
+     * Ilość neuronów na warstwie w sieci
+     * @return zwracana jest ilość neuoronów na warstwie sieci
+     */
+    public int getNumOfNerounsInLayer(int indexLayer) {
+        return networkLayers.get(indexLayer).getNumOfLayerNeurons();
     }
 
     /**

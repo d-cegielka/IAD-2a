@@ -1,9 +1,10 @@
 package org.iad.mlp;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Layer {
+public class Layer implements Serializable {
     private List<Neuron> layerNeurons;
 
     /**

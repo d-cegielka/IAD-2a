@@ -61,9 +61,9 @@ public class Neuron extends Weights {
      */
     public void activationFunction() {
         //funkcja sigmoidalna unipolarna [0;1]
-        //outputValue = 1.0 / (1.0 + Math.exp(-weightedSum));
+        outputValue = 1.0 / (1.0 + Math.exp(-weightedSum));
         //funkcja sigmoidalna bipolarna [-1;1]
-        outputValue = Math.tanh(weightedSum);
+        //outputValue = Math.tanh(weightedSum);
     }
 
     @Override

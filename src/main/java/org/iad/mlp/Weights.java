@@ -1,10 +1,11 @@
 package org.iad.mlp;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.Spliterator;
 
-public class Weights {
+public class Weights implements Serializable {
     private boolean isBias;
     private double[] weights;
     private double[] prevWeights;
