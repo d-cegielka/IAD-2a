@@ -1,32 +1,37 @@
 package org.iad.mlp;
 
-public class Neuron extends Weights {
+import java.io.Serializable;
+import java.util.Arrays;
+import java.util.Random;
+
+public class Neuron implements Serializable {
     private double error;
     private double weightedSum;
     private double outputValue;
+    private final boolean isBias;
+    private double[] weights;
+    private final double[] prevWeights;
+    private double[] prevPrevWeights;
+    /*private double deltaWeights;*/
 
-    public double getOutputValue() {
-        return outputValue;
-    }
-
-    public void setOutputValue(double outputValue) {
-        this.outputValue = outputValue;
-    }
-
-    public Neuron(int numOfWeight, boolean isBias/*, boolean isInputLayer*/) {
-        super(numOfWeight, isBias/*, isInputLayer*/);
-    }
-
-    public double getWeightedSum() {
-        return weightedSum;
-    }
-
-    public void setError(final double error) {
-        this.error = error;
-    }
-
-    public double getError() {
-        return error;
+    /**
+     * Konstruktor parametrowy
+     *
+     * @param numOfWeight ilość wag neuronu
+     * @param isBias czy neuron jest ma BIAS
+     */
+    public Neuron(final int numOfWeight, boolean isBias) {
+        this.isBias = isBias;
+        if (isBias) {
+            weights = new double[numOfWeight + 1];
+            prevWeights = new double[numOfWeight + 1];
+            prevPrevWeights = new double[numOfWeight + 1];
+        } else {
+            weights = new double[numOfWeight];
+            prevWeights = new double[numOfWeight];
+            prevPrevWeights = new double[numOfWeight];
+        }
+        RandomWeights();
     }
 
     /**
@@ -47,7 +52,7 @@ public class Neuron extends Weights {
      *
      * @param inputs wejście przekazywane warstwie sieci
      */
-    public void calcWeightedSum(final double[] inputs/*, boolean isInputLayer*/) {
+    public void calcWeightedSum(final double[] inputs) {
         double sum = 0.0;
         for (int i = 0; i < getNumOfWeight(); i++) {
             sum += inputs[i] * getWeight(i);
@@ -61,12 +66,12 @@ public class Neuron extends Weights {
      */
     public void activationFunction() {
         //funkcja sigmoidalna unipolarna [0;1]
-        outputValue = 1.0 / (1.0 + Math.exp(-weightedSum));
+        outputValue = 1.0 / (1.0 + Math.exp(-1.0 * weightedSum));
         //funkcja sigmoidalna bipolarna [-1;1]
         //outputValue = Math.tanh(weightedSum);
     }
 
-    @Override
+/*    @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder();
         sb.append(super.toString());
@@ -74,5 +79,86 @@ public class Neuron extends Weights {
         sb.append("Wyjście neuronu: ").append(outputValue).append("\n\t\t");
         sb.append("Błąd neuronu: ").append(error).append("\n\t");
         return sb.toString();
+    }*/
+
+    /**
+     * Losowanie wag neuronu z wartościami z zakresu -1:1
+     */
+    private void RandomWeights() {
+        Random random = new Random();
+        weights = random.doubles(weights.length,-0.5,0.5).toArray();
+        /*if(isInputLayer) {
+            Arrays.fill(weights, 1.0);
+        } else {
+            weights = random.doubles(weights.length,-1.0,1.0).toArray();
+        }*/
     }
+
+    public void setWeight(final double weight, final int weightIndex) {
+        /*deltaWeights = weight - prevWeights[weightIndex];*/
+        prevPrevWeights[weightIndex] = prevWeights[weightIndex];
+        prevWeights[weightIndex] = weights[weightIndex];
+        weights[weightIndex] = weight;
+    }
+
+    public double getOutputValue() {
+        return outputValue;
+    }
+
+    public void setOutputValue(double outputValue) {
+        this.outputValue = outputValue;
+    }
+
+    public double getWeightedSum() {
+        return weightedSum;
+    }
+
+    public void setError(final double error) {
+        this.error = error;
+    }
+
+    public double getError() {
+        return error;
+    }
+
+    public double getWeight(final int weightIndex) {
+        return weights[weightIndex];
+    }
+
+    public double getPrevWeight(final int weightIndex) {
+        return prevWeights[weightIndex];
+    }
+
+    public double getPrevPrevWeight(final int weightIndex) {
+        return prevPrevWeights[weightIndex];
+    }
+
+    /*public double getDeltaWeights() {
+        return deltaWeights;
+    }*/
+
+    public int getNumOfWeight() {
+        if(isBias)
+            return weights.length - 1;
+        else
+            return weights.length;
+    }
+
+    public boolean isBias() {
+        return isBias;
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder();
+        sb.append("Wagi: ").append(Arrays.toString(Arrays.copyOf(weights, getNumOfWeight()))).append("\n\t\t");
+        if (isBias) {
+            sb.append("Waga biasu: ").append(weights[weights.length - 1]).append("\n\t\t");
+        }
+        sb.append("Suma ważona wejść: ").append(weightedSum).append("\n\t\t");
+        sb.append("Wyjście neuronu: ").append(outputValue).append("\n\t\t");
+        sb.append("Błąd neuronu: ").append(error).append("\n\t");
+        return sb.toString();
+    }
+
 }

@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Network implements Serializable {
-    private List<Layer> networkLayers;
+    private final List<Layer> networkLayers;
     private double networkError;
 
     /**
@@ -121,7 +121,7 @@ public class Network implements Serializable {
         for (int i = 0; i < networkLayers.get(indexLastLayer).getNumOfLayerNeurons(); i++) {
             diff = outputs[i] - networkLayers.get(indexLastLayer).getNeuron(i).getOutputValue();
             networkLayers.get(indexLastLayer).getNeuron(i).setError(derivative(networkLayers.get(indexLastLayer).getNeuron(i).getOutputValue()) * diff);
-            networkError += diff * diff;
+            networkError += (diff * diff);
         }
         networkError /=2;
 
@@ -153,6 +153,7 @@ public class Network implements Serializable {
                             networkLayers.get(l - 1).getNeuron(w).getOutputValue();
                     deltaWeights = networkLayers.get(l).getNeuron(n).getPrevWeight(w) -
                             networkLayers.get(l).getNeuron(n).getPrevPrevWeight(w);
+                    //deltaWeights = networkLayers.get(l).getNeuron(n).getDeltaWeights();
                     networkLayers.get(l).getNeuron(n).setWeight(networkLayers.get(l).getNeuron(n).getWeight(w)
                             + delta + momentum * deltaWeights, w);
 

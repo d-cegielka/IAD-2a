@@ -16,6 +16,12 @@ import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
+import javafx.scene.Parent;
+import javafx.scene.SubScene;
+import javafx.scene.chart.CategoryAxis;
+import javafx.scene.chart.LineChart;
+import javafx.scene.chart.NumberAxis;
+import javafx.scene.chart.XYChart;
 import javafx.scene.control.*;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
@@ -60,6 +66,9 @@ public class Controller {
     private RadioButton epochAndError;
 
     @FXML
+    private TextField epochFreqField;
+
+    @FXML
     private TextField errorRateField;
 
     @FXML
@@ -89,8 +98,21 @@ public class Controller {
     @FXML
     private Button btnStopTrainingNetwork;
 
+    @FXML
+    public LineChart<Number,Number> globalErrorLineChart;
+
+    @FXML
+    public NumberAxis epochAxis;
+
+    @FXML
+    public NumberAxis errorAxis;
+
+    @FXML
+    private XYChart.Series<Number,Number> globalErrorSeries;
+
     ArrayList<Double[]> inputs;
     ArrayList<Double[]> outputs;
+
 
     public void initialize() throws IOException {
         choiceBias.getItems().addAll("tak","nie");
@@ -101,6 +123,20 @@ public class Controller {
 
         btnStartTrainingNetwork.setOnAction(trainingNetworkStartEvent);
         btnStopTrainingNetwork.setOnAction(trainingNetworkStopEvent);
+
+        //epochAxis.setAnimated(true);
+
+        //epochAxis = new NumberAxis(0,Double.parseDouble(numOfEpochField.getPromptText()), Double.parseDouble(numOfEpochField.getPromptText())/10);
+        //errorAxis = new NumberAxis(0,1,0.05);
+        //globalErrorLineChart = new LineChart<Number, Number>(epochAxis, errorAxis);
+
+
+        //globalErrorLineChart = new LineChart<Object, Object>(globalErrorCategoryAxis,globalErrorNumberAxis);
+
+/*        epochAxis = new CategoryAxis();
+        errorAxis = new NumberAxis();
+        globalErrorLineChart = new LineChart<String, Number>(epochAxis,errorAxis);
+        globalErrorSeries = new XYChart.Series<>();*/
     }
 
 
@@ -171,8 +207,17 @@ public class Controller {
     EventHandler<ActionEvent> trainingNetworkStartEvent = new EventHandler<ActionEvent>() {
         @Override
         public void handle(ActionEvent e) {
+            globalErrorSeries = new XYChart.Series<>();
+            globalErrorLineChart.getData().clear();
+            globalErrorLineChart.getData().add(globalErrorSeries);
+        /*    Platform.runLater(() -> {
+                globalErrorLineChart.getData().add(globalErrorSeries);
+            });*/
             if (numOfEpochField.getText().isEmpty()) {
                 numOfEpochField.setText(numOfEpochField.getPromptText());
+            }
+            if (epochFreqField.getText().isEmpty()) {
+                epochFreqField.setText(epochFreqField.getPromptText());
             }
             if(learningRateField.getText().isEmpty()) {
                 learningRateField.setText(learningRateField.getPromptText());
@@ -199,6 +244,7 @@ public class Controller {
                         networkStatus.setText("zakończono trening sieci");
                         btnStartTrainingNetwork.setDisable(false);
                         btnStopTrainingNetwork.setDisable(true);
+                        updateNetworkInfo();
                     }
                 }
             });
@@ -220,19 +266,6 @@ public class Controller {
             }
     };
 
-  /*  @FXML
-    public void startTrainingNetwork(ActionEvent actionEvent) {
-
-
-    }*/
-
-   /* @FXML
-    public void stopTrainingNetwork() {
-        btnStopTrainingNetwork.setOnAction(new EventHandler<ActionEvent>() {
-
-        });
-    }*/
-
     @FXML
     public void updateNetworkInfo() {
         txtNetworkInfo.setText(network.toString());
@@ -244,13 +277,14 @@ public class Controller {
             protected Object call() throws Exception {
                 Random random = new Random();
                 final int numOfEpoch = Integer.parseInt(numOfEpochField.getText());
+                final int epochFreq = Integer.parseInt(epochFreqField.getText());
                 boolean isRandomizePatterns = false;
                 double errorRate = 0d;
                 double momentumRate = Double.parseDouble(momentumRateField.getText());
                 double learningRate = Double.parseDouble(learningRateField.getText());
                 double globalError = 0d;
                 Thread.sleep(100);
-                int quartile = 1;
+                int progress = 1;
                 if (!errorRateField.isDisable()) {
                     errorRate = Double.parseDouble(errorRateField.getText());
                 }
@@ -284,19 +318,20 @@ public class Controller {
                     }
                     globalError /= network.getNumOfNerounsInLayer(network.getNumOfNetworkLayers() - 1);
 
-                    if (i % 50 == 0) {
+                    if (i % epochFreq == 0) {
                         globalErrorReport.append(globalError).append("\n");
+                        addDataToErrorChart(i,network.getNetworkError());
                     }
 
                     if(globalError <= errorRate){
                         i = numOfEpoch-1;
                     }
 
-                    if(i == (quartile*0.25*numOfEpoch) || i == numOfEpoch-1) {
+                    if(i == (progress*0.1*numOfEpoch) || i == numOfEpoch-1) {
                         errorReport(globalError);
                         updateProgress(i+1,numOfEpoch);
                         Thread.sleep(250);
-                        quartile++;
+                        progress++;
                     }
                     globalError = 0d;
 
@@ -305,6 +340,29 @@ public class Controller {
                 return true;
             }
         };
+    }
+
+    public void addDataToErrorChart(int epoch, double error) {
+        Platform.runLater(()-> globalErrorSeries.getData().add(new XYChart.Data<>(epoch,error)));
+    }
+
+
+    @FXML
+    public void testingPattern() {
+        infoSection.setExpandedPane(infoSection.getPanes().get(2));
+        Double[] testingPattern = inputs.get(patterns.getSelectionModel().getSelectedIndex());
+        txtTestInfo.clear();
+        txtTestInfo.appendText("Oczekiwane wyjście: " + Arrays.toString(testingPattern) + "\nOtrzymane wyjście: ");
+        txtTestInfo.appendText(Arrays.toString(roundDoubleArray(network.testingNetwork(ArrayUtils.toPrimitive(testingPattern)))));
+        networkStatus.setText("zaktualizowano informacje o sieci");
+    }
+
+    public double[] roundDoubleArray(double[] input) {
+        double[] returnArray = new double[input.length];
+        for (int i = 0; i < input.length; i++) {
+            returnArray[i] = Math.round(input[i] * 1000000.0) / 1000000.0;
+        }
+        return returnArray;
     }
 
     public File openFile(String info) throws IOException {
@@ -389,4 +447,5 @@ public class Controller {
     public void quitApp() {
         Platform.exit();
     }
+
 }
