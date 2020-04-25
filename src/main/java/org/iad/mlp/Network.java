@@ -101,7 +101,7 @@ public class Network implements Serializable {
             if (i == 0) {
                 for (int j = 0; j < networkLayers.get(i).getNumOfLayerNeurons(); j++) {
                     networkLayers.get(i).getNeuron(j).setWeightedSum(inputs[j]);
-                    networkLayers.get(i).getNeuron(j).setOutputValue(networkLayers.get(i).getNeuron(j).getWeightedSum());
+                    networkLayers.get(i).getNeuron(j).setOutputValue(inputs[j]);
                 }
             } else {
                 weightedSum(networkLayers.get(i - 1).getNeuronsOutputs(), i);
@@ -135,7 +135,6 @@ public class Network implements Serializable {
         //Obliczenie błedów warstw ukrytych
         for (int l = indexLastLayer; l > 0; l--) {
             for (int w = 0; w < networkLayers.get(l).getNumOfNeuronWeights(); w++) {
-                //double error = 0d;
                 for (int n = 0; n < networkLayers.get(l).getNumOfLayerNeurons(); n++) {
                     error += networkLayers.get(l).getNeuron(n).getWeight(w) * networkLayers.get(l).getNeuron(n).getError();
                 }
