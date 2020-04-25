@@ -1,3 +1,6 @@
 # Project exclude paths
 /target/
 /.idea/
+/doc/
+pattern.txt
+iris.data

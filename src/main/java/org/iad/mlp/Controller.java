@@ -1,5 +1,23 @@
 package org.iad.mlp;
 
+import com.univocity.parsers.common.processor.RowListProcessor;
+import com.univocity.parsers.csv.CsvParser;
+import com.univocity.parsers.csv.CsvParserSettings;
+import javafx.application.Platform;
+import javafx.concurrent.Task;
+import javafx.embed.swing.SwingFXUtils;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
+import javafx.fxml.FXML;
+import javafx.scene.chart.LineChart;
+import javafx.scene.chart.NumberAxis;
+import javafx.scene.chart.XYChart;
+import javafx.scene.control.*;
+import javafx.scene.image.WritableImage;
+import javafx.stage.FileChooser;
+import javafx.stage.Stage;
+import org.apache.commons.lang3.ArrayUtils;
+import javax.imageio.ImageIO;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -8,32 +26,11 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
-import com.univocity.parsers.common.processor.RowListProcessor;
-import javafx.application.Platform;
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
-import javafx.concurrent.Task;
-import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
-import javafx.fxml.FXML;
-import javafx.scene.Parent;
-import javafx.scene.SubScene;
-import javafx.scene.chart.CategoryAxis;
-import javafx.scene.chart.LineChart;
-import javafx.scene.chart.NumberAxis;
-import javafx.scene.chart.XYChart;
-import javafx.scene.control.*;
-import javafx.stage.FileChooser;
-import javafx.stage.Stage;
-import com.univocity.parsers.csv.CsvParser;
-import com.univocity.parsers.csv.CsvParserSettings;
-import org.apache.commons.lang3.ArrayUtils;
-
-
 public class Controller {
     Network network;
-    Task training;
+    Task<?> training;
     StringBuilder globalErrorReport;
+    File lastFile;
 
     @FXML
     private TextField neuronsOnLayers;
@@ -57,12 +54,6 @@ public class Controller {
     private TextField numOfEpochField;
 
     @FXML
-    private ToggleGroup treningType;
-
-    @FXML
-    private RadioButton epoch;
-
-    @FXML
     private RadioButton epochAndError;
 
     @FXML
@@ -81,7 +72,7 @@ public class Controller {
     private ChoiceBox<String> orderPattern;
 
     @FXML
-    private ChoiceBox<String> patterns;
+    private ListView<String> patterns;
 
     @FXML
     private Label networkStatus;
@@ -90,7 +81,7 @@ public class Controller {
     private Accordion infoSection;
 
     @FXML
-    private ProgressBar progressTraining = new ProgressBar(0);
+    private ProgressBar progressTraining;
 
     @FXML
     private Button btnStartTrainingNetwork;
@@ -113,8 +104,7 @@ public class Controller {
     ArrayList<Double[]> inputs;
     ArrayList<Double[]> outputs;
 
-
-    public void initialize() throws IOException {
+    public void initialize() {
         choiceBias.getItems().addAll("tak","nie");
         orderPattern.getItems().addAll("losowa", "stała");
         choiceBias.getSelectionModel().select(0);
@@ -123,32 +113,19 @@ public class Controller {
 
         btnStartTrainingNetwork.setOnAction(trainingNetworkStartEvent);
         btnStopTrainingNetwork.setOnAction(trainingNetworkStopEvent);
-
-        //epochAxis.setAnimated(true);
-
-        //epochAxis = new NumberAxis(0,Double.parseDouble(numOfEpochField.getPromptText()), Double.parseDouble(numOfEpochField.getPromptText())/10);
-        //errorAxis = new NumberAxis(0,1,0.05);
-        //globalErrorLineChart = new LineChart<Number, Number>(epochAxis, errorAxis);
-
-
-        //globalErrorLineChart = new LineChart<Object, Object>(globalErrorCategoryAxis,globalErrorNumberAxis);
-
-/*        epochAxis = new CategoryAxis();
-        errorAxis = new NumberAxis();
-        globalErrorLineChart = new LineChart<String, Number>(epochAxis,errorAxis);
-        globalErrorSeries = new XYChart.Series<>();*/
     }
 
-
+    /**
+     * Zmiana typu warunku zakończenia treningu
+     */
     @FXML
     public void trainingTypeChange() {
-        if (epochAndError.isSelected()) {
-            errorRateField.setDisable(false);
-        } else {
-            errorRateField.setDisable(true);
-        }
+        errorRateField.setDisable(!epochAndError.isSelected());
     }
 
+    /**
+     * Wczytywanie sieci z pliku
+     */
     @FXML
     public void loadNetwork() {
         try {
@@ -167,6 +144,9 @@ public class Controller {
         }
     }
 
+    /**
+     * Zapisywanie sieci do pliku
+     */
     @FXML
     public void saveNetwork(){
         try {
@@ -182,7 +162,9 @@ public class Controller {
         }
     }
 
-
+    /**
+     * Tworzenie sieci
+     */
     @FXML
     public void createNetwork() {
         if(neuronsOnLayers.getText().isEmpty()) neuronsOnLayers.setText(neuronsOnLayers.getPromptText());
@@ -204,48 +186,54 @@ public class Controller {
     }
 
 
-    EventHandler<ActionEvent> trainingNetworkStartEvent = new EventHandler<ActionEvent>() {
+    /**
+     * Moduł obsługi rozpoczęcia treningu sieci
+     */
+    EventHandler<ActionEvent> trainingNetworkStartEvent = new EventHandler<>() {
         @Override
         public void handle(ActionEvent e) {
+            //Obsługa wykresu
             globalErrorSeries = new XYChart.Series<>();
+            epochAxis = new NumberAxis();
+            errorAxis = new NumberAxis();
             globalErrorLineChart.getData().clear();
             globalErrorLineChart.getData().add(globalErrorSeries);
-        /*    Platform.runLater(() -> {
-                globalErrorLineChart.getData().add(globalErrorSeries);
-            });*/
+
+            //Inicializacja parametrów testu
             if (numOfEpochField.getText().isEmpty()) {
                 numOfEpochField.setText(numOfEpochField.getPromptText());
             }
             if (epochFreqField.getText().isEmpty()) {
                 epochFreqField.setText(epochFreqField.getPromptText());
             }
-            if(learningRateField.getText().isEmpty()) {
+            if (learningRateField.getText().isEmpty()) {
                 learningRateField.setText(learningRateField.getPromptText());
             }
-            if(momentumRateField.getText().isEmpty()) {
+            if (errorRateField.getText().isEmpty()) {
+                errorRateField.setText(errorRateField.getPromptText());
+            }
+            if (momentumRateField.getText().isEmpty()) {
                 momentumRateField.setText(momentumRateField.getPromptText());
             }
+
+            //Raportowanie treningu
             infoSection.setExpandedPane(infoSection.getPanes().get(1));
-            globalErrorReport = new StringBuilder();
+            initializeTrainingReport();
+
             btnStartTrainingNetwork.setDisable(true);
             btnStopTrainingNetwork.setDisable(false);
             progressTraining.progressProperty().unbind();
             progressTraining.setProgress(0);
             training = trainingNetworkTask();
-
-            //progressTraining.progressProperty().unbind();
             progressTraining.progressProperty().bind(training.progressProperty());
-
             networkStatus.setText("rozpoczęto trening sieci");
 
-            training.messageProperty().addListener(new ChangeListener<String>() {
-                public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
-                    if (newValue == "finished") {
-                        networkStatus.setText("zakończono trening sieci");
-                        btnStartTrainingNetwork.setDisable(false);
-                        btnStopTrainingNetwork.setDisable(true);
-                        updateNetworkInfo();
-                    }
+            training.messageProperty().addListener((observable, oldValue, newValue) -> {
+                if (newValue.equals("finished")) {
+                    networkStatus.setText("zakończono trening sieci");
+                    btnStartTrainingNetwork.setDisable(false);
+                    btnStopTrainingNetwork.setDisable(true);
+                    txtNetworkInfo.setText(network.toString());
                 }
             });
 
@@ -254,25 +242,36 @@ public class Controller {
         }
     };
 
-    EventHandler<ActionEvent> trainingNetworkStopEvent = new EventHandler<ActionEvent>() {
-            @Override
-            public void handle(ActionEvent actionEvent) {
-                btnStartTrainingNetwork.setDisable(false);
-                btnStopTrainingNetwork.setDisable(true);
-                training.cancel(true);
-                progressTraining.progressProperty().unbind();
-                progressTraining.setProgress(0);
-                networkStatus.setText("zatrzymano trening sieci");
-            }
+    /**
+     * Moduł obsługi zatrzymania treningu sieci
+     */
+    EventHandler<ActionEvent> trainingNetworkStopEvent = new EventHandler<>() {
+        @Override
+        public void handle(ActionEvent actionEvent) {
+            btnStartTrainingNetwork.setDisable(false);
+            btnStopTrainingNetwork.setDisable(true);
+            training.cancel(true);
+            progressTraining.progressProperty().unbind();
+            progressTraining.setProgress(0);
+            networkStatus.setText("zatrzymano trening sieci");
+        }
     };
 
+    /**
+     * Aktualizacja informacji o sieci
+     */
     @FXML
     public void updateNetworkInfo() {
         txtNetworkInfo.setText(network.toString());
+        infoSection.setExpandedPane(infoSection.getPanes().get(0));
     }
 
-    private Task trainingNetworkTask() {
-        return new Task() {
+    /**
+     * Trening sieci
+     * @return zadanie treningu sieci
+     */
+    private Task<?> trainingNetworkTask() {
+        return new Task<>() {
             @Override
             protected Object call() throws Exception {
                 Random random = new Random();
@@ -289,21 +288,18 @@ public class Controller {
                     errorRate = Double.parseDouble(errorRateField.getText());
                 }
 
-                if(patterns.getSelectionModel().getSelectedIndex() == 0){
+                if (patterns.getSelectionModel().getSelectedIndex() == 0) {
                     isRandomizePatterns = true;
                 }
 
-
-                for(int i=0; i< numOfEpoch; i++) {
-                    List<Double[]> inputsClone = new ArrayList<>();
-                    inputsClone.addAll(inputs);
-                    List<Double[]> outputsClone = new ArrayList<>();
-                    outputsClone.addAll(outputs);
+                for (int i = 0; i < numOfEpoch; i++) {
+                    List<Double[]> inputsClone = new ArrayList<>(inputs);
+                    List<Double[]> outputsClone = new ArrayList<>(outputs);
                     int indexPattern;
-                    for (int w = 0; w < inputsClone.size(); w++) {
+                    for (int w = 0; w < inputs.size(); w++) {
                         if (isRandomizePatterns) {
                             indexPattern = random.nextInt(inputsClone.size());
-                        } else{
+                        } else {
                             indexPattern = w;
                         }
 
@@ -316,25 +312,24 @@ public class Controller {
                         outputsClone.remove(indexPattern);
                         globalError += network.getNetworkError();
                     }
-                    globalError /= network.getNumOfNerounsInLayer(network.getNumOfNetworkLayers() - 1);
+                    globalError /= inputs.size();
 
                     if (i % epochFreq == 0) {
                         globalErrorReport.append(globalError).append("\n");
-                        addDataToErrorChart(i,network.getNetworkError());
+                        addDataToErrorChart(i, globalError);
                     }
 
-                    if(globalError <= errorRate){
-                        i = numOfEpoch-1;
+                    if (globalError <= errorRate) {
+                        i = numOfEpoch - 1;
                     }
 
-                    if(i == (progress*0.1*numOfEpoch) || i == numOfEpoch-1) {
+                    if (i == (progress * numOfEpoch / 10) || i == numOfEpoch - 1) {
                         errorReport(globalError);
-                        updateProgress(i+1,numOfEpoch);
-                        Thread.sleep(250);
+                        updateProgress(i + 1, numOfEpoch);
+                        Thread.sleep(150);
                         progress++;
                     }
                     globalError = 0d;
-
                 }
                 updateMessage("finished");
                 return true;
@@ -342,10 +337,20 @@ public class Controller {
         };
     }
 
+    /**
+     * Aktualizacja live wykresu błędu globalnego podczas treningu sieci
+     * @param epoch aktualna epoka
+     * @param error wartość błędu globalnego
+     */
     public void addDataToErrorChart(int epoch, double error) {
         Platform.runLater(()-> globalErrorSeries.getData().add(new XYChart.Data<>(epoch,error)));
     }
 
+
+
+    public void errorReport(double error) {
+        txtTrainingInfo.appendText(error +"\n");
+    }
 
     @FXML
     public void testingPattern() {
@@ -354,56 +359,118 @@ public class Controller {
         txtTestInfo.clear();
         txtTestInfo.appendText("Oczekiwane wyjście: " + Arrays.toString(testingPattern) + "\nOtrzymane wyjście: ");
         txtTestInfo.appendText(Arrays.toString(roundDoubleArray(network.testingNetwork(ArrayUtils.toPrimitive(testingPattern)))));
+        txtTestInfo.appendText("\n\nBłąd średniokwadratowy dla testowanego wzorca: "+network.getNetworkError());
         networkStatus.setText("zaktualizowano informacje o sieci");
     }
 
-    public double[] roundDoubleArray(double[] input) {
-        double[] returnArray = new double[input.length];
-        for (int i = 0; i < input.length; i++) {
-            returnArray[i] = Math.round(input[i] * 1000000.0) / 1000000.0;
-        }
-        return returnArray;
-    }
-
-    public File openFile(String info) throws IOException {
-        final FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle(info);
-        File getFile = fileChooser.showOpenDialog(new Stage());
-        return getFile;
-    }
-
-    public File saveFile(String info) throws IOException {
-        final FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle(info);
-        /*String path = "C:\\TELEKOM-Z1\\data.txt";
-        inputFile = new File(path);*/
-        FileChooser.ExtensionFilter extFilter = new FileChooser.ExtensionFilter("Wszystkie pliki (*.*)", "*.*");
-        fileChooser.getExtensionFilters().add(extFilter);
-        File saveFile = fileChooser.showSaveDialog(new Stage());
-        return saveFile;
-        //reportArea.setText(new String(Files.readAllBytes(Paths.get(inputFile.getPath()))));
-    }
-
-    public void errorReport(double error) {
-        txtTrainingInfo.setText(String.valueOf(error));
-    }
-
     @FXML
-    public void readPatternFromTextArea() throws IOException {
+    public void readPatternFromTextArea() {
         parsePattern(textAreaPattern.getText());
     }
 
-    @FXML
-    public void readPatternFromFile() throws IOException {
-        File patternsFile = openFile("Wybierz plik z wzorcami");
-        String textFile = new String(Files.readAllBytes(Paths.get(patternsFile.getPath())));
-        textAreaPattern.clear();
-        textAreaPattern.appendText(textFile);
-        parsePattern(textFile);
+    /**
+     * Zapis wykresu do pliku png
+     */
+    public void saveChart() {
+        try {
+            File save = saveFile("Wybierz miejsce zapisu wykresu błędu globalnego");
+            globalErrorLineChart.setAnimated(false);
+            WritableImage image = globalErrorLineChart.snapshot(null, null);
+            ImageIO.write(SwingFXUtils.fromFXImage(image, null), "png", save);
+            globalErrorLineChart.setAnimated(true);
+        } catch (IOException e) {
+            e.printStackTrace();
+            networkStatus.setText("nie udało się zapisać wykresu! spróbuj ponownie");
+        }
     }
 
+    /**
+     * Zapis raportu z treningu sieci do pliku
+     */
+    @FXML
+    public void saveTrainingReport() {
+        try {
+            File saveFile = saveFile("Wybierz plik do zapisu raportu treningu sieci");
+            Files.writeString(Paths.get(saveFile.getPath()),globalErrorReport);
+            networkStatus.setText("raport treningu został zapisany poprawnie do pliku "+saveFile.getName());
 
-    public void parsePattern(String buffer) throws IOException {
+        } catch (IOException e) {
+            e.printStackTrace();
+            networkStatus.setText("nie udało się zapisać raportu z treningu! spróbuj ponownie");
+        }
+    }
+
+    /**
+     * Zapis informacji o sieci do pliku
+     */
+    public void saveNetworkReport() {
+        try {
+            File saveFile = saveFile("Wybierz plik do zapisu informacji o sieci");
+            Files.writeString(Paths.get(saveFile.getPath()),network.toString());
+            networkStatus.setText("informacje o sieci zostały zapisane poprawnie do pliku "+saveFile.getName());
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            networkStatus.setText("nie udało się zapisać informacji o sieci! spróbuj ponownie");
+        }
+    }
+
+    /**
+     * Zapis raportu z testowania sieci wzorcem do pliku
+     */
+    public void saveTestingReport() {
+        try {
+            File saveFile = saveFile("Wybierz plik do zapisu informacji o sieci");
+            String testingReport = txtTestInfo.getText() + "\nSieć:\n" + network.toString();
+            Files.writeString(Paths.get(saveFile.getPath()),testingReport);
+            networkStatus.setText("informacje o sieci zostały zapisane poprawnie do pliku "+saveFile.getName());
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            networkStatus.setText("nie udało się zapisać informacji o sieci! spróbuj ponownie");
+        }
+    }
+
+    /**
+     * Inicjalizacja raportu z treningu sieci
+     */
+    public void initializeTrainingReport() {
+        txtTrainingInfo.clear();
+        globalErrorReport = new StringBuilder();
+        globalErrorReport.append("Liczba epok: ").append(numOfEpochField.getText());
+        globalErrorReport.append("\nSkok rejestracji błędu globalnego: ").append(epochFreqField.getText());
+        if (!errorRateField.isDisable()) {
+            globalErrorReport.append("\nWymagany poziom błędu globalnego kończący trening sieci:").append(errorRateField.getText());
+        }
+        globalErrorReport.append("\nWspółczynnik nauki: ").append(learningRateField.getText());
+        globalErrorReport.append("\nWspółczynnik momentum: ").append(momentumRateField.getText());
+        globalErrorReport.append("\nKolejność wzorców: ").append(orderPattern.getSelectionModel().getSelectedItem());
+        globalErrorReport.append("\n\nBłąd globalny:\n");
+    }
+
+    /**
+     * Odczyt wzorców z pliku
+     */
+    @FXML
+    public void readPatternFromFile() {
+        try {
+            File patternsFile = openFile("Wybierz plik z wzorcami");
+            String textFile = new String(Files.readAllBytes(Paths.get(patternsFile.getPath())));
+            textAreaPattern.clear();
+            textAreaPattern.appendText(textFile);
+            parsePattern(textFile);
+            networkStatus.setText("wzorce wczytano poprawnie");
+        } catch (IOException e) {
+            e.printStackTrace();
+            networkStatus.setText("nie udało się odczytać wzorców z pliku! spróbuj ponownie");
+        }
+    }
+
+    /**
+     * Parsowanie wzorców do postaci list z wzorcami wejściowymi i wyjściowymi
+     * @param allPattern nieprzetworzenie wzorce
+     */
+    public void parsePattern(String allPattern) {
         inputs = new ArrayList<>();
         outputs = new ArrayList<>();
         CsvParserSettings parserSettings = new CsvParserSettings();
@@ -414,14 +481,14 @@ public class Controller {
         parserSettings.setHeaderExtractionEnabled(true);
 
         CsvParser parser = new CsvParser(parserSettings);
-        parser.parse(new StringReader(buffer));
-        String[] headers = rowProcessor.getHeaders();
+        parser.parse(new StringReader(allPattern));
+        rowProcessor.getHeaders();
         patterns.getItems().clear();
         List<String[]> rows = rowProcessor.getRows();
-        for (int i = 0; i < rows.size(); i++){
-            patterns.getItems().add("(" + rows.get(i)[0] + "),("+rows.get(i)[1]+")");
-            String[] inputString = (rows.get(i)[0]).split(",");
-            String[] outputString = (rows.get(i)[1]).split(",");
+        for (String[] row : rows) {
+            patterns.getItems().add("(" + row[0] + "),(" + row[1] + ")");
+            String[] inputString = (row[0]).split(",");
+            String[] outputString = (row[1]).split(",");
             Double[] input = new Double[inputString.length];
             Double[] output = new Double[outputString.length];
             for (int j = 0; j < inputString.length; j++) {
@@ -437,15 +504,58 @@ public class Controller {
         }
 
         patterns.getSelectionModel().select(0);
+    }
 
-        for (int i=0;i<inputs.size();i++) {
-            System.out.println(Arrays.toString(inputs.get(i))+","+Arrays.toString(outputs.get(i)));
+    /**
+     * Zaokrąglanie tablicy z wartościami zmiennoprzecinkowymi
+     * @param input tablica z wartościami do zaokrąglenia
+     * @return tablica z zaokrąglonymi wartościami
+     */
+    public double[] roundDoubleArray(double[] input) {
+        double[] returnArray = new double[input.length];
+        for (int i = 0; i < input.length; i++) {
+            returnArray[i] = Math.round(input[i] * 1000000.0) / 1000000.0;
         }
+        return returnArray;
+    }
+
+    /**
+     * Wybór pliku do odczytu
+     * @param info komunikat jaki plik wybieramy
+     * @return wybrany plik do odczytu
+     */
+    public File openFile(String info) {
+        final FileChooser fileChooser = new FileChooser();
+        if (lastFile != null) {
+            fileChooser.setInitialDirectory(lastFile.getParentFile());
+        }
+        fileChooser.setTitle(info);
+        File getFile = fileChooser.showOpenDialog(new Stage());
+        lastFile = getFile;
+        return getFile;
+    }
+
+    /**
+     *
+     * Wybór pliku do zapisu
+     * @param info komunikat jaki plik zapisujemy
+     * @return wybrany plik do zapisu
+     */
+    public File saveFile(String info) {
+        final FileChooser fileChooser = new FileChooser();
+        if (lastFile != null) {
+            fileChooser.setInitialDirectory(lastFile.getParentFile());
+        }
+        fileChooser.setTitle(info);
+        FileChooser.ExtensionFilter extFilter = new FileChooser.ExtensionFilter("Wszystkie pliki (*.*)", "*.*");
+        fileChooser.getExtensionFilters().add(extFilter);
+        File saveFile = fileChooser.showSaveDialog(new Stage());
+        lastFile = saveFile;
+        return saveFile;
     }
 
     @FXML
     public void quitApp() {
         Platform.exit();
     }
-
 }

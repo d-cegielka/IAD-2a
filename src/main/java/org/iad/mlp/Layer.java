@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Layer implements Serializable {
-    private List<Neuron> layerNeurons;
+    private final List<Neuron> layerNeurons;
 
     /**
      * Konstruktor tworzy listę neuronów warstwy a następnie dodaje do niej określoną liczbę neuronów.
@@ -36,9 +36,13 @@ public class Layer implements Serializable {
      */
     public int getNumOfNeuronWeights() {
         return layerNeurons.get(0).getNumOfWeight();
-    };
+    }
 
-
+    /**
+     * Pobierz neuron
+     * @param neuronIndex indeks neuronu do zwrócenia
+     * @return zwracany jest neuron o indeksie neuronIndex
+     */
     public Neuron getNeuron(int neuronIndex){
         return layerNeurons.get(neuronIndex);
     }

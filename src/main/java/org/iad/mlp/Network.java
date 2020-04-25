@@ -21,6 +21,12 @@ public class Network implements Serializable {
             networkLayers.add(new Layer(numOfNeurons, numOfWeights, isBias));
             numOfWeights = numOfNeurons;
         }
+        for (int i = 0; i < numOfNeuronsInLayers.get(0); i++) {
+            networkLayers.get(0).getNeuron(i).setWeight(1.0,0);
+            if (isBias) {
+                networkLayers.get(0).getNeuron(i).setWeight(0.0,1);
+            }
+        }
     }
 
     /**
@@ -114,6 +120,7 @@ public class Network implements Serializable {
      */
     private void calcError(double[] outputs){
         networkError = 0d;
+        double error = 0d;
         double diff;
         int indexLastLayer = getNumOfNetworkLayers() - 1;
 
@@ -121,19 +128,20 @@ public class Network implements Serializable {
         for (int i = 0; i < networkLayers.get(indexLastLayer).getNumOfLayerNeurons(); i++) {
             diff = outputs[i] - networkLayers.get(indexLastLayer).getNeuron(i).getOutputValue();
             networkLayers.get(indexLastLayer).getNeuron(i).setError(derivative(networkLayers.get(indexLastLayer).getNeuron(i).getOutputValue()) * diff);
-            networkError += (diff * diff);
+            networkError += (diff * diff)/2;
         }
-        networkError /=2;
+        networkError /= networkLayers.get(indexLastLayer).getNumOfLayerNeurons();
 
         //Obliczenie błedów warstw ukrytych
         for (int l = indexLastLayer; l > 0; l--) {
             for (int w = 0; w < networkLayers.get(l).getNumOfNeuronWeights(); w++) {
-                double error = 0d;
+                //double error = 0d;
                 for (int n = 0; n < networkLayers.get(l).getNumOfLayerNeurons(); n++) {
                     error += networkLayers.get(l).getNeuron(n).getWeight(w) * networkLayers.get(l).getNeuron(n).getError();
                 }
                 error *= derivative(networkLayers.get(l-1).getNeuron(w).getOutputValue());
                 networkLayers.get(l-1).getNeuron(w).setError(error);
+                error = 0d;
             }
         }
     }
@@ -144,18 +152,15 @@ public class Network implements Serializable {
      * @param momentum współczynnik momentu
      */
     private void updateWeights(double learningRate, double momentum) {
-        double delta, deltaWeights;
+        double delta;
         boolean isBias = networkLayers.get(0).getNeuron(0).isBias();
         for (int l = 1; l < getNumOfNetworkLayers(); l++) {
             for (int n = 0; n < networkLayers.get(l).getNumOfLayerNeurons(); n++) {
                 for (int w = 0; w < networkLayers.get(l).getNumOfNeuronWeights(); w++) {
                     delta = learningRate * networkLayers.get(l).getNeuron(n).getError() *
                             networkLayers.get(l - 1).getNeuron(w).getOutputValue();
-                    deltaWeights = networkLayers.get(l).getNeuron(n).getPrevWeight(w) -
-                            networkLayers.get(l).getNeuron(n).getPrevPrevWeight(w);
-                    //deltaWeights = networkLayers.get(l).getNeuron(n).getDeltaWeights();
                     networkLayers.get(l).getNeuron(n).setWeight(networkLayers.get(l).getNeuron(n).getWeight(w)
-                            + delta + momentum * deltaWeights, w);
+                            + delta + momentum * networkLayers.get(l).getNeuron(n).getDeltaWeights(w), w);
 
                     if (w == (networkLayers.get(l).getNumOfNeuronWeights() - 1) && isBias) {
                         delta = learningRate * networkLayers.get(l).getNeuron(n).getError();
@@ -170,13 +175,11 @@ public class Network implements Serializable {
 
     /**
      * Pochodna funkcji sigmoidalnej unipolarnej wyraża się wzorem f(x) * (1 - f(x))
-     * Pochodna funkcji sigmoidalnej bipolarnej wyraża się wzorem 1 - f^2(x)
      * @param input wartość funkcji sigmoidalnej f(x)
      * @return pochodna funkcji sigmoidalnej f'(x)
      */
     private double derivative(double input){
-        return input * (1 - input);
-        //return 1 - (input * input);
+        return (input * (1 - input));
     }
 
     /**
@@ -185,14 +188,6 @@ public class Network implements Serializable {
      */
     public int getNumOfNetworkLayers() {
         return networkLayers.size();
-    }
-
-    /**
-     * Ilość neuronów na warstwie w sieci
-     * @return zwracana jest ilość neuoronów na warstwie sieci
-     */
-    public int getNumOfNerounsInLayer(int indexLayer) {
-        return networkLayers.get(indexLayer).getNumOfLayerNeurons();
     }
 
     /**

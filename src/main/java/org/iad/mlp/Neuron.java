@@ -11,8 +11,7 @@ public class Neuron implements Serializable {
     private final boolean isBias;
     private double[] weights;
     private final double[] prevWeights;
-    private double[] prevPrevWeights;
-    /*private double deltaWeights;*/
+    private final double[] prevPrevWeights;
 
     /**
      * Konstruktor parametrowy
@@ -62,40 +61,22 @@ public class Neuron implements Serializable {
 
     /**
      * funkcja aktywacji ustawia wartość na wyjściu każdego neuronu z podanej warstwy,
-     * funkcja sigmoidalna wyrażona jest wzorem (1 / 1 + e ^ -x)
+     * funkcja sigmoidalna unipolarna wyrażona jest wzorem (1 / 1 + e ^ -x)
      */
     public void activationFunction() {
         //funkcja sigmoidalna unipolarna [0;1]
-        outputValue = 1.0 / (1.0 + Math.exp(-1.0 * weightedSum));
-        //funkcja sigmoidalna bipolarna [-1;1]
-        //outputValue = Math.tanh(weightedSum);
+        outputValue = 1.0 / (1.0 + Math.exp(-weightedSum));
     }
 
-/*    @Override
-    public String toString() {
-        final StringBuilder sb = new StringBuilder();
-        sb.append(super.toString());
-        sb.append("Suma ważona wejść: ").append(weightedSum).append("\n\t\t");
-        sb.append("Wyjście neuronu: ").append(outputValue).append("\n\t\t");
-        sb.append("Błąd neuronu: ").append(error).append("\n\t");
-        return sb.toString();
-    }*/
-
     /**
-     * Losowanie wag neuronu z wartościami z zakresu -1:1
+     * Losowanie wag neuronu z wartościami z zakresu -0.5:0.5
      */
     private void RandomWeights() {
         Random random = new Random();
         weights = random.doubles(weights.length,-0.5,0.5).toArray();
-        /*if(isInputLayer) {
-            Arrays.fill(weights, 1.0);
-        } else {
-            weights = random.doubles(weights.length,-1.0,1.0).toArray();
-        }*/
     }
 
     public void setWeight(final double weight, final int weightIndex) {
-        /*deltaWeights = weight - prevWeights[weightIndex];*/
         prevPrevWeights[weightIndex] = prevWeights[weightIndex];
         prevWeights[weightIndex] = weights[weightIndex];
         weights[weightIndex] = weight;
@@ -125,17 +106,9 @@ public class Neuron implements Serializable {
         return weights[weightIndex];
     }
 
-    public double getPrevWeight(final int weightIndex) {
-        return prevWeights[weightIndex];
+    public double getDeltaWeights(final int weightIndex) {
+        return prevWeights[weightIndex]-prevPrevWeights[weightIndex];
     }
-
-    public double getPrevPrevWeight(final int weightIndex) {
-        return prevPrevWeights[weightIndex];
-    }
-
-    /*public double getDeltaWeights() {
-        return deltaWeights;
-    }*/
 
     public int getNumOfWeight() {
         if(isBias)
