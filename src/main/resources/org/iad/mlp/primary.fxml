@@ -31,6 +31,11 @@
                   <MenuItem mnemonicParsing="false" onAction="#saveTestingReport" text="Zapisz wynik" />
                </items>
             </Menu>
+            <Menu mnemonicParsing="false" text="Klasyfikacja">
+               <items>
+                  <MenuItem mnemonicParsing="false" onAction="#saveClassificationReport" text="Zapisz wyniki" />
+               </items>
+            </Menu>
          </menus>
       </MenuBar>
       <SplitPane dividerPositions="0.2206, 0.77" focusTraversable="true" prefHeight="-1.0" prefWidth="-1.0" VBox.vgrow="ALWAYS">
@@ -43,16 +48,20 @@
                   <Separator layoutX="27.0" layoutY="120.0" prefWidth="200.0" />
                   <Label layoutX="87.0" layoutY="135.0" text="Tworzenie sieci" />
                   <Label layoutX="14.0" layoutY="151.0" prefHeight="59.0" prefWidth="82.0" text="Ilość neuronów na warstwach :" wrapText="true" />
-                  <TextField fx:id="neuronsOnLayers" layoutX="100.0" layoutY="167.0" prefHeight="26.0" prefWidth="139.0" promptText="4,2,4" />
+                  <TextField fx:id="neuronsOnLayers" layoutX="100.0" layoutY="167.0" prefHeight="26.0" prefWidth="139.0" promptText="4,2,3" />
                   <Label layoutX="14.0" layoutY="210.0" text="Sieć z bias :" />
                   <ChoiceBox fx:id="choiceBias" layoutX="100.0" layoutY="205.0" prefHeight="26.0" prefWidth="139.0" />
                   <Separator layoutX="26.0" layoutY="298.0" prefWidth="200.0" />
-                  <Button id="readPattern" layoutX="27.0" layoutY="521.0" mnemonicParsing="false" onAction="#readPatternFromTextArea" prefHeight="25.0" prefWidth="73.0" text="Wczytaj" />
-                  <TextArea fx:id="textAreaPattern" layoutX="26.0" layoutY="339.0" prefHeight="169.0" prefWidth="200.0" text="input;output&#10;1,0,0,0;1,0,0,0&#10;0,1,0,0;0,1,0,0&#10;0,0,1,0;0,0,1,0&#10;0,0,0,1;0,0,0,1&#10;" />
-                  <Label layoutX="103.0" layoutY="311.0" text="Wzorce" />
-                  <Button id="readPattern" layoutX="119.0" layoutY="521.0" mnemonicParsing="false" onAction="#readPatternFromFile" text="Wczytaj z pliku" />
+                  <Button layoutX="27.0" layoutY="659.0" mnemonicParsing="false" onAction="#readPatternFromTextArea" prefHeight="25.0" prefWidth="73.0" text="Wczytaj" />
+                  <TextArea fx:id="textAreaTrainingPatterns" layoutX="26.0" layoutY="462.0" prefHeight="190.0" prefWidth="200.0" text="input;output&#10;5.1,3.5,1.4,0.2;1,0,0&#10;4.9,3.0,1.4,0.2;1,0,0&#10;4.7,3.2,1.3,0.2;1,0,0&#10;4.6,3.1,1.5,0.2;1,0,0&#10;5.0,3.6,1.4,0.2;1,0,0&#10;5.4,3.9,1.7,0.4;1,0,0&#10;4.6,3.4,1.4,0.3;1,0,0&#10;5.0,3.4,1.5,0.2;1,0,0&#10;4.4,2.9,1.4,0.2;1,0,0&#10;4.9,3.1,1.5,0.1;1,0,0&#10;5.4,3.7,1.5,0.2;1,0,0&#10;4.8,3.4,1.6,0.2;1,0,0&#10;4.8,3.0,1.4,0.1;1,0,0&#10;4.3,3.0,1.1,0.1;1,0,0&#10;5.8,4.0,1.2,0.2;1,0,0&#10;5.7,4.4,1.5,0.4;1,0,0&#10;5.4,3.9,1.3,0.4;1,0,0&#10;5.1,3.5,1.4,0.3;1,0,0&#10;5.7,3.8,1.7,0.3;1,0,0&#10;5.1,3.8,1.5,0.3;1,0,0&#10;5.4,3.4,1.7,0.2;1,0,0&#10;5.1,3.7,1.5,0.4;1,0,0&#10;4.6,3.6,1.0,0.2;1,0,0&#10;5.1,3.3,1.7,0.5;1,0,0&#10;4.8,3.4,1.9,0.2;1,0,0&#10;5.0,3.0,1.6,0.2;1,0,0&#10;5.0,3.4,1.6,0.4;1,0,0&#10;5.2,3.5,1.5,0.2;1,0,0&#10;5.2,3.4,1.4,0.2;1,0,0&#10;4.7,3.2,1.6,0.2;1,0,0&#10;4.8,3.1,1.6,0.2;1,0,0&#10;5.4,3.4,1.5,0.4;1,0,0&#10;5.2,4.1,1.5,0.1;1,0,0&#10;5.5,4.2,1.4,0.2;1,0,0&#10;4.9,3.1,1.5,0.1;1,0,0&#10;5.0,3.2,1.2,0.2;1,0,0&#10;5.5,3.5,1.3,0.2;1,0,0&#10;4.9,3.1,1.5,0.1;1,0,0&#10;4.4,3.0,1.3,0.2;1,0,0&#10;5.1,3.4,1.5,0.2;1,0,0&#10;5.0,3.5,1.3,0.3;1,0,0&#10;4.5,2.3,1.3,0.3;1,0,0&#10;4.4,3.2,1.3,0.2;1,0,0&#10;5.0,3.5,1.6,0.6;1,0,0&#10;5.1,3.8,1.9,0.4;1,0,0&#10;4.8,3.0,1.4,0.3;1,0,0&#10;5.1,3.8,1.6,0.2;1,0,0&#10;4.6,3.2,1.4,0.2;1,0,0&#10;5.3,3.7,1.5,0.2;1,0,0&#10;5.0,3.3,1.4,0.2;1,0,0&#10;7.0,3.2,4.7,1.4;0,1,0&#10;6.4,3.2,4.5,1.5;0,1,0&#10;6.9,3.1,4.9,1.5;0,1,0&#10;5.5,2.3,4.0,1.3;0,1,0&#10;6.5,2.8,4.6,1.5;0,1,0&#10;5.7,2.8,4.5,1.3;0,1,0&#10;6.3,3.3,4.7,1.6;0,1,0&#10;4.9,2.4,3.3,1.0;0,1,0&#10;6.6,2.9,4.6,1.3;0,1,0&#10;5.2,2.7,3.9,1.4;0,1,0&#10;5.0,2.0,3.5,1.0;0,1,0&#10;5.9,3.0,4.2,1.5;0,1,0&#10;6.0,2.2,4.0,1.0;0,1,0&#10;6.1,2.9,4.7,1.4;0,1,0&#10;5.6,2.9,3.6,1.3;0,1,0&#10;6.7,3.1,4.4,1.4;0,1,0&#10;5.6,3.0,4.5,1.5;0,1,0&#10;5.8,2.7,4.1,1.0;0,1,0&#10;6.2,2.2,4.5,1.5;0,1,0&#10;5.6,2.5,3.9,1.1;0,1,0&#10;5.9,3.2,4.8,1.8;0,1,0&#10;6.1,2.8,4.0,1.3;0,1,0&#10;6.3,2.5,4.9,1.5;0,1,0&#10;6.1,2.8,4.7,1.2;0,1,0&#10;6.4,2.9,4.3,1.3;0,1,0&#10;6.6,3.0,4.4,1.4;0,1,0&#10;6.8,2.8,4.8,1.4;0,1,0&#10;6.7,3.0,5.0,1.7;0,1,0&#10;6.0,2.9,4.5,1.5;0,1,0&#10;5.7,2.6,3.5,1.0;0,1,0&#10;5.5,2.4,3.8,1.1;0,1,0&#10;5.5,2.4,3.7,1.0;0,1,0&#10;5.8,2.7,3.9,1.2;0,1,0&#10;6.0,2.7,5.1,1.6;0,1,0&#10;5.4,3.0,4.5,1.5;0,1,0&#10;6.0,3.4,4.5,1.6;0,1,0&#10;6.7,3.1,4.7,1.5;0,1,0&#10;6.3,2.3,4.4,1.3;0,1,0&#10;5.6,3.0,4.1,1.3;0,1,0&#10;5.5,2.5,4.0,1.3;0,1,0&#10;5.5,2.6,4.4,1.2;0,1,0&#10;6.1,3.0,4.6,1.4;0,1,0&#10;5.8,2.6,4.0,1.2;0,1,0&#10;5.0,2.3,3.3,1.0;0,1,0&#10;5.6,2.7,4.2,1.3;0,1,0&#10;5.7,3.0,4.2,1.2;0,1,0&#10;5.7,2.9,4.2,1.3;0,1,0&#10;6.2,2.9,4.3,1.3;0,1,0&#10;5.1,2.5,3.0,1.1;0,1,0&#10;5.7,2.8,4.1,1.3;0,1,0&#10;6.3,3.3,6.0,2.5;0,0,1&#10;5.8,2.7,5.1,1.9;0,0,1&#10;7.1,3.0,5.9,2.1;0,0,1&#10;6.3,2.9,5.6,1.8;0,0,1&#10;6.5,3.0,5.8,2.2;0,0,1&#10;7.6,3.0,6.6,2.1;0,0,1&#10;4.9,2.5,4.5,1.7;0,0,1&#10;7.3,2.9,6.3,1.8;0,0,1&#10;6.7,2.5,5.8,1.8;0,0,1&#10;7.2,3.6,6.1,2.5;0,0,1&#10;6.5,3.2,5.1,2.0;0,0,1&#10;6.4,2.7,5.3,1.9;0,0,1&#10;6.8,3.0,5.5,2.1;0,0,1&#10;5.7,2.5,5.0,2.0;0,0,1&#10;5.8,2.8,5.1,2.4;0,0,1&#10;6.4,3.2,5.3,2.3;0,0,1&#10;6.5,3.0,5.5,1.8;0,0,1&#10;7.7,3.8,6.7,2.2;0,0,1&#10;7.7,2.6,6.9,2.3;0,0,1&#10;6.0,2.2,5.0,1.5;0,0,1&#10;6.9,3.2,5.7,2.3;0,0,1&#10;5.6,2.8,4.9,2.0;0,0,1&#10;7.7,2.8,6.7,2.0;0,0,1&#10;6.3,2.7,4.9,1.8;0,0,1&#10;6.7,3.3,5.7,2.1;0,0,1&#10;7.2,3.2,6.0,1.8;0,0,1&#10;6.2,2.8,4.8,1.8;0,0,1&#10;6.1,3.0,4.9,1.8;0,0,1&#10;6.4,2.8,5.6,2.1;0,0,1&#10;7.2,3.0,5.8,1.6;0,0,1&#10;7.4,2.8,6.1,1.9;0,0,1&#10;7.9,3.8,6.4,2.0;0,0,1&#10;6.4,2.8,5.6,2.2;0,0,1&#10;6.3,2.8,5.1,1.5;0,0,1&#10;6.1,2.6,5.6,1.4;0,0,1&#10;7.7,3.0,6.1,2.3;0,0,1&#10;6.3,3.4,5.6,2.4;0,0,1&#10;6.4,3.1,5.5,1.8;0,0,1&#10;6.0,3.0,4.8,1.8;0,0,1&#10;6.9,3.1,5.4,2.1;0,0,1&#10;6.7,3.1,5.6,2.4;0,0,1&#10;6.9,3.1,5.1,2.3;0,0,1&#10;5.8,2.7,5.1,1.9;0,0,1&#10;6.8,3.2,5.9,2.3;0,0,1&#10;6.7,3.3,5.7,2.5;0,0,1&#10;6.7,3.0,5.2,2.3;0,0,1&#10;6.3,2.5,5.0,1.9;0,0,1&#10;6.5,3.0,5.2,2.0;0,0,1&#10;6.2,3.4,5.4,2.3;0,0,1&#10;5.9,3.0,5.1,1.8;0,0,1" />
+                  <Label layoutX="56.0" layoutY="310.0" text="Wczytywanie zbioru wzorców" />
+                  <Button layoutX="119.0" layoutY="659.0" mnemonicParsing="false" onAction="#readPatternFromFile" text="Wczytaj z pliku" />
                   <Label layoutX="116.0" layoutY="9.0" text="Sieć" />
                   <Button layoutX="134.0" layoutY="40.0" mnemonicParsing="false" onAction="#updateNetworkInfo" prefHeight="59.0" prefWidth="94.0" text="Pobierz informacje" textAlignment="CENTER" wrapText="true" />
+                  <Label layoutX="21.0" layoutY="343.0" prefHeight="38.0" prefWidth="81.0" text="Podział zbioru tren./test.(%):" wrapText="true" />
+                  <Label layoutX="21.0" layoutY="388.0" prefHeight="59.0" prefWidth="81.0" text="Podział zbioru treningowego tren./walid.(%):" wrapText="true" />
+                  <TextField fx:id="collectionDivisonField" layoutX="107.0" layoutY="350.0" prefHeight="25.0" prefWidth="125.0" promptText="50" />
+                  <TextField fx:id="collectionTrainingDivisionField" layoutX="107.0" layoutY="405.0" prefHeight="25.0" prefWidth="125.0" promptText="60" />
                </children></AnchorPane>
             <ScrollPane prefHeight="718.0" prefWidth="527.0">
                <content>
@@ -64,7 +73,7 @@
                               <content>
                                 <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
                                        <children>
-                                          <TextArea fx:id="txtNetworkInfo" layoutX="9.0" layoutY="14.0" prefHeight="618.0" prefWidth="611.0" />
+                                          <TextArea fx:id="txtNetworkInfo" layoutX="9.0" layoutY="14.0" prefHeight="618.0" prefWidth="611.0" AnchorPane.bottomAnchor="0.0" AnchorPane.topAnchor="0.0" />
                                        </children>
                                     </AnchorPane>
                               </content>
@@ -73,8 +82,7 @@
                               <content>
                                 <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
                                        <children>
-                                          <TextArea fx:id="txtTrainingInfo" layoutX="10.0" layoutY="515.0" prefHeight="106.0" prefWidth="608.0" />
-                                                <LineChart fx:id="globalErrorLineChart" createSymbols="false" layoutX="5.0" layoutY="6.0" legendVisible="false" prefHeight="510.0" prefWidth="615.0" title="Błąd globalny">
+                                                <LineChart fx:id="globalErrorLineChart" createSymbols="false" layoutX="5.0" layoutY="6.0" prefHeight="510.0" prefWidth="615.0" title="Błąd globalny" AnchorPane.bottomAnchor="0.0" AnchorPane.topAnchor="0.0">
                                                     <xAxis>
                                                         <NumberAxis fx:id="epochAxis" label="Liczba epok" side="BOTTOM" />
                                                     </xAxis>
@@ -86,15 +94,24 @@
                                     </AnchorPane>
                               </content>
                             </TitledPane>
-                            <TitledPane animated="false" text="Testowanie sieci">
+                            <TitledPane animated="false" text="Testowanie wzorca">
                               <content>
                                 <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
                                        <children>
-                                          <TextArea fx:id="txtTestInfo" layoutX="9.0" layoutY="14.0" prefHeight="621.0" prefWidth="609.0" />
+                                          <TextArea fx:id="txtTestInfo" layoutX="9.0" layoutY="14.0" prefHeight="621.0" prefWidth="609.0" AnchorPane.bottomAnchor="0.0" AnchorPane.topAnchor="0.0" />
                                        </children>
                                     </AnchorPane>
                               </content>
                             </TitledPane>
+                              <TitledPane animated="false" layoutX="10.0" layoutY="60.0" text="Klasyfikacja">
+                                 <content>
+                                    <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
+                                       <children>
+                                          <TextArea fx:id="classificationTextArea" layoutX="9.0" layoutY="14.0" prefHeight="621.0" prefWidth="609.0" AnchorPane.bottomAnchor="0.0" AnchorPane.topAnchor="0.0" />
+                                       </children>
+                                    </AnchorPane>
+                                 </content>
+                              </TitledPane>
                           </panes>
                         </Accordion>
                      </children>
@@ -104,7 +121,7 @@
                <children>
                   <Label layoutX="93.0" layoutY="14.0" text="Trening sieci" />
                   <Label layoutX="14.0" layoutY="117.0" text="Liczba epok:" />
-                  <TextField fx:id="numOfEpochField" layoutX="100.0" layoutY="113.0" prefHeight="26.0" prefWidth="139.0" promptText="5000" />
+                  <TextField fx:id="numOfEpochField" layoutX="100.0" layoutY="113.0" prefHeight="26.0" prefWidth="139.0" promptText="1000" />
                   <RadioButton fx:id="epochAndError" layoutX="30.0" layoutY="85.0" mnemonicParsing="false" onAction="#trainingTypeChange" text="liczba epok + poziom błędu ">
                      <toggleGroup>
                         <ToggleGroup fx:id="treningType" />
@@ -115,19 +132,21 @@
                   <TextField fx:id="errorRateField" disable="true" layoutX="100.0" layoutY="190.0" prefHeight="26.0" prefWidth="139.0" promptText="0.0001" />
                   <Label layoutX="14.0" layoutY="226.0" prefHeight="37.0" prefWidth="76.0" text="Współczynnik nauki: " wrapText="true" />
                   <Label layoutX="14.0" layoutY="272.0" prefHeight="38.0" prefWidth="76.0" text="Współczynnik momentum:" wrapText="true" />
-                  <TextField fx:id="learningRateField" layoutX="100.0" layoutY="231.0" prefHeight="26.0" prefWidth="139.0" promptText="0.6" />
-                  <TextField fx:id="momentumRateField" layoutX="100.0" layoutY="278.0" prefHeight="26.0" prefWidth="139.0" promptText="0.0" />
+                  <TextField fx:id="learningRateField" layoutX="100.0" layoutY="231.0" prefHeight="26.0" prefWidth="139.0" promptText="0.2" />
+                  <TextField fx:id="momentumRateField" layoutX="100.0" layoutY="278.0" prefHeight="26.0" prefWidth="139.0" promptText="0.6" />
                   <Label layoutX="14.0" layoutY="320.0" prefHeight="38.0" prefWidth="76.0" text="Kolejność wzorców:" wrapText="true" />
                   <ChoiceBox fx:id="orderPattern" layoutX="100.0" layoutY="326.0" prefHeight="26.0" prefWidth="139.0" />
-                  <Button fx:id="btnStartTrainingNetwork" layoutX="26.0" layoutY="380.0" mnemonicParsing="false" text="Trenuj sieć" />
-                  <Button fx:id="btnStopTrainingNetwork" disable="true" layoutX="114.0" layoutY="380.0" mnemonicParsing="false" text="Zatrzymaj trening" />
-                  <Separator layoutX="26.0" layoutY="424.0" prefWidth="200.0" />
-                  <Label layoutX="83.0" layoutY="442.0" text="Testowanie sieci" textAlignment="CENTER" />
-                  <Label layoutX="6.0" layoutY="551.0" text="Wzorzec:" />
-                  <ListView fx:id="patterns" layoutX="61.0" layoutY="475.0" prefHeight="169.0" prefWidth="169.0" />
-                  <Button layoutX="93.0" layoutY="662.0" mnemonicParsing="false" onAction="#testingPattern" text="Testuj wzorzec" />
+                  <Button fx:id="btnStartTrainingNetwork" layoutX="26.0" layoutY="372.0" mnemonicParsing="false" text="Trenuj sieć" />
+                  <Button fx:id="btnStopTrainingNetwork" disable="true" layoutX="114.0" layoutY="372.0" mnemonicParsing="false" text="Zatrzymaj trening" />
+                  <Separator layoutX="26.0" layoutY="414.0" prefWidth="200.0" />
+                  <Label layoutX="83.0" layoutY="427.0" text="Testowanie sieci" textAlignment="CENTER" />
+                  <Label fx:id="testingPatternsLabel" alignment="CENTER" contentDisplay="CENTER" layoutX="6.0" layoutY="524.0" text="Wzorce:" wrapText="true" />
+                  <ListView fx:id="testingPatterns" layoutX="55.0" layoutY="450.0" prefHeight="164.0" prefWidth="193.0" />
+                  <Button layoutX="93.0" layoutY="626.0" mnemonicParsing="false" onAction="#testingPattern" text="Testuj wzorzec" />
                   <Label layoutX="13.0" layoutY="140.0" prefHeight="46.0" prefWidth="82.0" text="Skok rejestracji błędu: " wrapText="true" />
-                  <TextField fx:id="epochFreqField" layoutX="100.0" layoutY="150.0" prefHeight="25.0" prefWidth="139.0" promptText="50" />
+                  <TextField fx:id="epochFreqField" layoutX="100.0" layoutY="150.0" prefHeight="25.0" prefWidth="139.0" promptText="25" />
+                  <Button layoutX="93.0" layoutY="677.0" mnemonicParsing="false" onAction="#classification" text="Klasyfikacja" />
+                  <Separator layoutX="27.0" layoutY="661.0" prefWidth="200.0" />
                </children>
             </AnchorPane>
          </items>

@@ -17,20 +17,26 @@ import javafx.scene.image.WritableImage;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import org.apache.commons.lang3.ArrayUtils;
+
 import javax.imageio.ImageIO;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 public class Controller {
+    public Label testingPatternsLabel;
     Network network;
     Task<?> training;
     StringBuilder globalErrorReport;
+    StringBuilder globalValidationErrorReport;
     File lastFile;
+
+    @FXML
+    private TextField collectionDivisonField;
+
+    @FXML
+    private TextField collectionTrainingDivisionField;
 
     @FXML
     private TextField neuronsOnLayers;
@@ -39,16 +45,16 @@ public class Controller {
     private ChoiceBox<String> choiceBias;
 
     @FXML
-    private TextArea textAreaPattern;
+    private TextArea textAreaTrainingPatterns;
 
     @FXML
     private TextArea txtNetworkInfo;
 
     @FXML
-    private TextArea txtTrainingInfo;
+    private TextArea txtTestInfo;
 
     @FXML
-    private TextArea txtTestInfo;
+    private TextArea classificationTextArea;
 
     @FXML
     private TextField numOfEpochField;
@@ -72,7 +78,7 @@ public class Controller {
     private ChoiceBox<String> orderPattern;
 
     @FXML
-    private ListView<String> patterns;
+    private ListView<String> testingPatterns;
 
     @FXML
     private Label networkStatus;
@@ -99,17 +105,21 @@ public class Controller {
     public NumberAxis errorAxis;
 
     @FXML
-    private XYChart.Series<Number,Number> globalErrorSeries;
+    private XYChart.Series<Number,Number> globalErrorTrainingSeries;
 
-    ArrayList<Double[]> inputs;
-    ArrayList<Double[]> outputs;
+    @FXML
+    private XYChart.Series<Number,Number> globalErrorValidationSeries;
+
+    Patterns patterns;
+
+    ArrayList<Double[]> inputsTestingPatterns;
+    ArrayList<Double[]> outputsTestingPatterns;
 
     public void initialize() {
         choiceBias.getItems().addAll("tak","nie");
         orderPattern.getItems().addAll("losowa", "stała");
         choiceBias.getSelectionModel().select(0);
         orderPattern.getSelectionModel().select(0);
-        readPatternFromTextArea();
 
         btnStartTrainingNetwork.setOnAction(trainingNetworkStartEvent);
         btnStopTrainingNetwork.setOnAction(trainingNetworkStopEvent);
@@ -193,11 +203,15 @@ public class Controller {
         @Override
         public void handle(ActionEvent e) {
             //Obsługa wykresu
-            globalErrorSeries = new XYChart.Series<>();
+            globalErrorTrainingSeries = new XYChart.Series<>();
+            globalErrorValidationSeries = new XYChart.Series<>();
+            globalErrorTrainingSeries.setName("zbiór treningowy");
+            globalErrorValidationSeries.setName("zbiór walidacyjny");
             epochAxis = new NumberAxis();
             errorAxis = new NumberAxis();
             globalErrorLineChart.getData().clear();
-            globalErrorLineChart.getData().add(globalErrorSeries);
+            globalErrorLineChart.getData().add(globalErrorTrainingSeries);
+            globalErrorLineChart.getData().add(globalErrorValidationSeries);
 
             //Inicializacja parametrów testu
             if (numOfEpochField.getText().isEmpty()) {
@@ -216,6 +230,19 @@ public class Controller {
                 momentumRateField.setText(momentumRateField.getPromptText());
             }
 
+            final int numOfEpoch = Integer.parseInt(numOfEpochField.getText());
+            final int epochFreq = Integer.parseInt(epochFreqField.getText());
+            boolean isRandomizePatterns = false;
+            if (orderPattern.getSelectionModel().getSelectedItem().equals("losowa")) {
+                isRandomizePatterns = true;
+            }
+            double errorRate = 0d;
+            double momentumRate = Double.parseDouble(momentumRateField.getText());
+            double learningRate = Double.parseDouble(learningRateField.getText());
+            if (!errorRateField.isDisable()) {
+                errorRate = Double.parseDouble(errorRateField.getText());
+            }
+
             //Raportowanie treningu
             infoSection.setExpandedPane(infoSection.getPanes().get(1));
             initializeTrainingReport();
@@ -224,9 +251,10 @@ public class Controller {
             btnStopTrainingNetwork.setDisable(false);
             progressTraining.progressProperty().unbind();
             progressTraining.setProgress(0);
-            training = trainingNetworkTask();
+            training = trainingNetworkTask(numOfEpoch, epochFreq, momentumRate, learningRate ,errorRate,  isRandomizePatterns);
             progressTraining.progressProperty().bind(training.progressProperty());
             networkStatus.setText("rozpoczęto trening sieci");
+
 
             training.messageProperty().addListener((observable, oldValue, newValue) -> {
                 if (newValue.equals("finished")) {
@@ -270,33 +298,26 @@ public class Controller {
      * Trening sieci
      * @return zadanie treningu sieci
      */
-    private Task<?> trainingNetworkTask() {
+    private Task<?> trainingNetworkTask(final int numOfEpoch, final int epochFreq, double momentumRate,
+                                        double learningRate , double errorRate, boolean isRandomizePatterns ) {
         return new Task<>() {
             @Override
             protected Object call() throws Exception {
                 Random random = new Random();
-                final int numOfEpoch = Integer.parseInt(numOfEpochField.getText());
-                final int epochFreq = Integer.parseInt(epochFreqField.getText());
-                boolean isRandomizePatterns = false;
-                double errorRate = 0d;
-                double momentumRate = Double.parseDouble(momentumRateField.getText());
-                double learningRate = Double.parseDouble(learningRateField.getText());
-                double globalError = 0d;
+                List<Double[]> inputsValidation = new ArrayList<>(patterns.getValidationInputs());
+                List<Double[]> outputsValidation = new ArrayList<>(patterns.getValidationOutputs());
+                List<Double[]> actualInputsTraining = new ArrayList<>(patterns.getTrainingInputs());
+                List<Double[]> actualOutputsTraining = new ArrayList<>(patterns.getTrainingOutputs());
+                double globalErrorTraining = 0d;
+                double globalErrorValidation = 0d;
                 Thread.sleep(100);
                 int progress = 1;
-                if (!errorRateField.isDisable()) {
-                    errorRate = Double.parseDouble(errorRateField.getText());
-                }
-
-                if (patterns.getSelectionModel().getSelectedIndex() == 0) {
-                    isRandomizePatterns = true;
-                }
 
                 for (int i = 0; i < numOfEpoch; i++) {
-                    List<Double[]> inputsClone = new ArrayList<>(inputs);
-                    List<Double[]> outputsClone = new ArrayList<>(outputs);
+                    List<Double[]> inputsClone = new ArrayList<>(actualInputsTraining);
+                    List<Double[]> outputsClone = new ArrayList<>(actualOutputsTraining);
                     int indexPattern;
-                    for (int w = 0; w < inputs.size(); w++) {
+                    for (int w = 0; w < actualInputsTraining.size(); w++) {
                         if (isRandomizePatterns) {
                             indexPattern = random.nextInt(inputsClone.size());
                         } else {
@@ -310,26 +331,33 @@ public class Controller {
                                 momentumRate);
                         inputsClone.remove(indexPattern);
                         outputsClone.remove(indexPattern);
-                        globalError += network.getNetworkError();
+                        globalErrorTraining += network.getNetworkError();
                     }
-                    globalError /= inputs.size();
+                    globalErrorTraining /= actualInputsTraining.size();
 
                     if (i % epochFreq == 0) {
-                        globalErrorReport.append(globalError).append("\n");
-                        addDataToErrorChart(i, globalError);
+                        globalErrorReport.append(globalErrorTraining).append("\n");
+                        for(int j=0; j<inputsValidation.size();j++){
+                            network.testingNetwork(ArrayUtils.toPrimitive(inputsValidation.get(j)),ArrayUtils.toPrimitive(outputsValidation.get(j)));
+                            globalErrorValidation += network.getNetworkError();
+                        }
+                        globalErrorValidation /= inputsValidation.size();
+                        globalValidationErrorReport.append(globalErrorValidation).append("\n");
+                        addDataToErrorChart(i, globalErrorTraining,globalErrorValidation);
+                        globalErrorValidation = 0d;
                     }
 
-                    if (globalError <= errorRate) {
+                    if (globalErrorTraining <= errorRate) {
                         i = numOfEpoch - 1;
                     }
 
                     if (i == (progress * numOfEpoch / 10) || i == numOfEpoch - 1) {
-                        errorReport(globalError);
+                        /*errorReport(globalErrorTraining);*/
                         updateProgress(i + 1, numOfEpoch);
                         Thread.sleep(150);
                         progress++;
                     }
-                    globalError = 0d;
+                    globalErrorTraining = 0d;
                 }
                 updateMessage("finished");
                 return true;
@@ -340,33 +368,26 @@ public class Controller {
     /**
      * Aktualizacja live wykresu błędu globalnego podczas treningu sieci
      * @param epoch aktualna epoka
-     * @param error wartość błędu globalnego
+     * @param errorTraining wartość błędu globalnego treningu
+     * @param errorValidation wartość błędu globalnego walidacji
      */
-    public void addDataToErrorChart(int epoch, double error) {
-        Platform.runLater(()-> globalErrorSeries.getData().add(new XYChart.Data<>(epoch,error)));
-    }
-
-
-
-    public void errorReport(double error) {
-        txtTrainingInfo.appendText(error +"\n");
+    public void addDataToErrorChart(int epoch, double errorTraining, double errorValidation) {
+        Platform.runLater(()-> globalErrorTrainingSeries.getData().add(new XYChart.Data<>(epoch,errorTraining)));
+        Platform.runLater(()-> globalErrorValidationSeries.getData().add(new XYChart.Data<>(epoch,errorValidation)));
     }
 
     @FXML
     public void testingPattern() {
         infoSection.setExpandedPane(infoSection.getPanes().get(2));
-        Double[] testingPattern = inputs.get(patterns.getSelectionModel().getSelectedIndex());
+        Double[] inputTestingPattern = inputsTestingPatterns.get(testingPatterns.getSelectionModel().getSelectedIndex());
+        Double[] outputTestingPattern = outputsTestingPatterns.get(testingPatterns.getSelectionModel().getSelectedIndex());
         txtTestInfo.clear();
-        txtTestInfo.appendText("Oczekiwane wyjście: " + Arrays.toString(testingPattern) + "\nOtrzymane wyjście: ");
-        txtTestInfo.appendText(Arrays.toString(roundDoubleArray(network.testingNetwork(ArrayUtils.toPrimitive(testingPattern)))));
+        txtTestInfo.appendText("Oczekiwane wyjście: " + Arrays.toString(outputTestingPattern) + "\nOtrzymane wyjście: ");
+        txtTestInfo.appendText(Arrays.toString(roundDoubleArray(network.testingNetwork(ArrayUtils.toPrimitive(inputTestingPattern),ArrayUtils.toPrimitive(outputTestingPattern)))));
         txtTestInfo.appendText("\n\nBłąd średniokwadratowy dla testowanego wzorca: "+network.getNetworkError());
         networkStatus.setText("zaktualizowano informacje o sieci");
     }
 
-    @FXML
-    public void readPatternFromTextArea() {
-        parsePattern(textAreaPattern.getText());
-    }
 
     /**
      * Zapis wykresu do pliku png
@@ -391,7 +412,7 @@ public class Controller {
     public void saveTrainingReport() {
         try {
             File saveFile = saveFile("Wybierz plik do zapisu raportu treningu sieci");
-            Files.writeString(Paths.get(saveFile.getPath()),globalErrorReport);
+            Files.writeString(Paths.get(saveFile.getPath()),globalErrorReport.append(globalValidationErrorReport));
             networkStatus.setText("raport treningu został zapisany poprawnie do pliku "+saveFile.getName());
 
         } catch (IOException e) {
@@ -420,14 +441,30 @@ public class Controller {
      */
     public void saveTestingReport() {
         try {
-            File saveFile = saveFile("Wybierz plik do zapisu informacji o sieci");
+            File saveFile = saveFile("Wybierz plik do zapisu raportu z treningu sieci");
             String testingReport = txtTestInfo.getText() + "\nSieć:\n" + network.toString();
             Files.writeString(Paths.get(saveFile.getPath()),testingReport);
-            networkStatus.setText("informacje o sieci zostały zapisane poprawnie do pliku "+saveFile.getName());
+            networkStatus.setText("informacje zostały zapisane poprawnie do pliku "+saveFile.getName());
 
         } catch (IOException e) {
             e.printStackTrace();
-            networkStatus.setText("nie udało się zapisać informacji o sieci! spróbuj ponownie");
+            networkStatus.setText("nie udało się zapisać raportui! spróbuj ponownie");
+        }
+    }
+
+    /**
+     * Zapis raportu z klasyfikacji do pliku
+     */
+    public void saveClassificationReport() {
+        try {
+            File saveFile = saveFile("Wybierz plik do zapisu raportu z klasyfkiacji");
+            String classificationReport = classificationTextArea.getText() + "\n\nSieć:\n" + network.toString();
+            Files.writeString(Paths.get(saveFile.getPath()),classificationReport);
+            networkStatus.setText("informacje  zostały zapisane poprawnie do pliku "+saveFile.getName());
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            networkStatus.setText("nie udało się raportu do pliku! spróbuj ponownie");
         }
     }
 
@@ -435,7 +472,7 @@ public class Controller {
      * Inicjalizacja raportu z treningu sieci
      */
     public void initializeTrainingReport() {
-        txtTrainingInfo.clear();
+        globalValidationErrorReport = new StringBuilder();
         globalErrorReport = new StringBuilder();
         globalErrorReport.append("Liczba epok: ").append(numOfEpochField.getText());
         globalErrorReport.append("\nSkok rejestracji błędu globalnego: ").append(epochFreqField.getText());
@@ -446,33 +483,43 @@ public class Controller {
         globalErrorReport.append("\nWspółczynnik momentum: ").append(momentumRateField.getText());
         globalErrorReport.append("\nKolejność wzorców: ").append(orderPattern.getSelectionModel().getSelectedItem());
         globalErrorReport.append("\n\nBłąd globalny:\n");
+        globalValidationErrorReport.append("\n\nBłąd walidacyjny:\n");
+
     }
 
     /**
-     * Odczyt wzorców z pliku
+     * Odczyt wzorców treningowych z pliku
      */
     @FXML
     public void readPatternFromFile() {
         try {
-            File patternsFile = openFile("Wybierz plik z wzorcami");
+            File patternsFile = openFile("Wybierz plik z wzorcami treningowymi");
             String textFile = new String(Files.readAllBytes(Paths.get(patternsFile.getPath())));
-            textAreaPattern.clear();
-            textAreaPattern.appendText(textFile);
-            parsePattern(textFile);
-            networkStatus.setText("wzorce wczytano poprawnie");
+            textAreaTrainingPatterns.clear();
+            textAreaTrainingPatterns.appendText(textFile);
+            parseTrainingPattern(textFile);
+            networkStatus.setText("wzorce treningowe wczytano poprawnie");
         } catch (IOException e) {
             e.printStackTrace();
-            networkStatus.setText("nie udało się odczytać wzorców z pliku! spróbuj ponownie");
+            networkStatus.setText("nie udało się odczytać wzorców treningowych z pliku! spróbuj ponownie");
         }
     }
 
     /**
-     * Parsowanie wzorców do postaci list z wzorcami wejściowymi i wyjściowymi
+     * Odczyt wzorców treningowych z GUI
+     */
+    @FXML
+    public void readPatternFromTextArea() {
+        parseTrainingPattern(textAreaTrainingPatterns.getText());
+        networkStatus.setText("wzorce wczytano poprawnie");
+    }
+
+    /**
+     * Parsowanie wzorców do postaci list z wzorcami treningowymi wejściowymi i wyjściowymi
      * @param allPattern nieprzetworzenie wzorce
      */
-    public void parsePattern(String allPattern) {
-        inputs = new ArrayList<>();
-        outputs = new ArrayList<>();
+    public void parseTrainingPattern(String allPattern) {
+        patterns = new Patterns();
         CsvParserSettings parserSettings = new CsvParserSettings();
         parserSettings.setLineSeparatorDetectionEnabled(true);
         parserSettings.setDelimiterDetectionEnabled(true);
@@ -483,27 +530,67 @@ public class Controller {
         CsvParser parser = new CsvParser(parserSettings);
         parser.parse(new StringReader(allPattern));
         rowProcessor.getHeaders();
-        patterns.getItems().clear();
         List<String[]> rows = rowProcessor.getRows();
         for (String[] row : rows) {
-            patterns.getItems().add("(" + row[0] + "),(" + row[1] + ")");
+            patterns.addClassType(row[1]);
+        }
+        patterns.initializePatterns();
+        for (String[] row : rows) {
             String[] inputString = (row[0]).split(",");
-            String[] outputString = (row[1]).split(",");
             Double[] input = new Double[inputString.length];
-            Double[] output = new Double[outputString.length];
             for (int j = 0; j < inputString.length; j++) {
                 input[j] = Double.parseDouble(inputString[j]);
             }
 
-            for (int j = 0; j < outputString.length; j++) {
-                output[j] = Double.parseDouble(outputString[j]);
-            }
-
-            inputs.add(input);
-            outputs.add(output);
+            patterns.addPattern(row[1],input);
         }
+        if(collectionDivisonField.getText().isEmpty()){
+            collectionDivisonField.setText(collectionDivisonField.getPromptText());
+        }
+        if(collectionTrainingDivisionField.getText().isEmpty()){
+            collectionTrainingDivisionField.setText(collectionTrainingDivisionField.getPromptText());
+        }
+        patterns.createSubsetsPatterns(Double.parseDouble(collectionDivisonField.getText()) / 100,
+                Double.parseDouble(collectionTrainingDivisionField.getText()) / 100);
+        inputsTestingPatterns = new ArrayList<>(patterns.getTestingInputs());
+        outputsTestingPatterns = new ArrayList<>(patterns.getTestingOutputs());
+        loadTestingPatterns();
+    }
 
-        patterns.getSelectionModel().select(0);
+    private void loadTestingPatterns(){
+        testingPatterns.getItems().clear();
+        for (int i = 0; i < inputsTestingPatterns.size(); i++) {
+            testingPatterns.getItems().add(Arrays.toString(inputsTestingPatterns.get(i)) + "," + Arrays.toString(outputsTestingPatterns.get(i)));
+        }
+        testingPatterns.getSelectionModel().select(0);
+        testingPatternsLabel.setText("Wzorce:\n   ("+inputsTestingPatterns.size()+")");
+
+    }
+
+    @FXML
+    private void classification(){
+        classificationTextArea.clear();
+        classificationTextArea.appendText("Macierz pomyłek: \n");
+        classificationTextArea.appendText("\t\t\t");
+        for(Double[] type: patterns.getClassTypes().values()){
+            classificationTextArea.appendText(Arrays.toString(type) + "\t");
+        }
+        infoSection.setExpandedPane(infoSection.getPanes().get(3));
+        for(Map.Entry<String,ArrayList<Double[]>> obj : patterns.getTestingPatterns().entrySet()) {
+            HashMap<String, Integer> classificationResult = patterns.createClassificationMap();
+            double[] output = ArrayUtils.toPrimitive(patterns.getClassTypes().get(obj.getKey()));
+            for(Double[] input: obj.getValue()){
+                int[] classifiedClass = new int[output.length];
+                List<Double> outputToClassify = Arrays.asList(ArrayUtils.toObject(network.testingNetwork(ArrayUtils.toPrimitive(input), output)));
+                classifiedClass[outputToClassify.indexOf(Collections.max(outputToClassify))] = 1;
+                String txtclassifiedClass = Arrays.toString(classifiedClass);
+                classificationResult.merge(txtclassifiedClass.substring(1, txtclassifiedClass.length() - 1).replaceAll("\\s", ""), 1, Integer::sum);
+            }
+            classificationTextArea.appendText("\n" + Arrays.toString(output) + "\t\t ");
+            for(Integer num: classificationResult.values()){
+                classificationTextArea.appendText(num + "\t\t\t ");
+            }
+        }
     }
 
     /**
@@ -558,4 +645,5 @@ public class Controller {
     public void quitApp() {
         Platform.exit();
     }
+
 }

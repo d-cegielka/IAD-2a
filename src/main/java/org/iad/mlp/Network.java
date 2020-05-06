@@ -51,11 +51,12 @@ public class Network implements Serializable {
      * a na koniec na podstawie odpowiedzi wygenerowanej przez sieć oraz pożądanego wzorca odpowiedzi
      * następuje wyznaczanie błędów.
      * @param inputs wzorzec treningowy
+     * @param outputs pożadany wzorzec wyjściowy
      * @return tablica z wartościami wyjść neuronów warstwy wyjściowej (licząc od zera do ostatniego neuronu w warstwie)
      */
-    public double[] testingNetwork(double[] inputs){
+    public double[] testingNetwork(double[] inputs, double[] outputs){
         forwardPropagation(inputs);
-        calcError(inputs);
+        calcError(outputs);
         return networkLayers.get(getNumOfNetworkLayers() - 1).getNeuronsOutputs();
     }
 
